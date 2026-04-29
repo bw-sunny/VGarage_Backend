@@ -1,0 +1,1 @@
+INSERT INTO users (email, phone, nickname, city, language) VALUES ('bwsunny023@gmail.com', '89109133901', 'sunny', 'Moscow', 'en');
