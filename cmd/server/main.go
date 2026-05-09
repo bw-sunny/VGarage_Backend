@@ -13,13 +13,15 @@ func main() {
 
 	r := gin.Default()
 
-	// Группа API v1
-	v1 := r.Group("/api/v1")
+	v1 := r.Group("/vgarage/create")
 	{
-		v1.POST("/cars", handlers.CreateCarHandler)
-		// Сюда добавим POST /users, POST /expenses и т.д.
+		v1.POST("/user", handlers.CreateUserHandler)
+		v1.POST("/car", handlers.CreateCarHandler)
+		v1.POST("/expense", handlers.CreateExpenseHandler)
 	}
 
-	log.Println("Сервер стартовал на :8080")
-	r.Run(":8080")
+	log.Println("Сервер запущен на http://localhost:8080")
+	if err := r.Run(":8080"); err != nil {
+		log.Fatal("Ошибка запуска сервера: ", err)
+	}
 }

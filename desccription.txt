@@ -1,0 +1,13 @@
+v0.1 - Инициализированы таблицы БД, настроен хэндлер CreateCarHandler для добавления машины
+
+Обращение к серверу:
+
+Везде должны быть JSON с параметрами
+    POST /vgarage/create/user --  Добавление нового юзера
+    UPDATE 
+    POST /vgarage/create/car -- Добавление новой машины
+    UPDATE
+    DELETE
+    POST /vgarage/create/expense --  Добавление расходов
+    UPDATE
+    DELETE
