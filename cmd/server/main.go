@@ -13,11 +13,15 @@ func main() {
 
 	r := gin.Default()
 
-	v1 := r.Group("/vgarage/create")
+	v1 := r.Group("/vgarage")
 	{
-		v1.POST("/user", handlers.CreateUserHandler)
-		v1.POST("/car", handlers.CreateCarHandler)
-		v1.POST("/expense", handlers.CreateExpenseHandler)
+		v1.POST("/create/user", handlers.CreateUserHandler)
+		v1.POST("/create/car", handlers.CreateCarHandler)
+		v1.POST("/create/expense", handlers.CreateExpenseHandler)
+
+		v1.GET("/user/:id/cars", handlers.GetUserCarsHandler)
+
+		v1.DELETE("/car/:id", handlers.DeleteCarHandler)
 	}
 
 	log.Println("Сервер запущен на http://localhost:8080")

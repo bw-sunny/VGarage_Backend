@@ -4,10 +4,13 @@ v0.1 - Инициализированы таблицы БД, настроен х
 
 Везде должны быть JSON с параметрами
     POST /vgarage/create/user --  Добавление нового юзера
-    UPDATE 
+    UPDATE
+
     POST /vgarage/create/car -- Добавление новой машины
     UPDATE
-    DELETE
+    DELETE vgarage/car/{car_id} -- Удаление машины. {car_id} - id машиниы для удаления
+    GET /vgarage/user/{user_id}/car -- получение списка машин у конкретного юзера
+
     POST /vgarage/create/expense --  Добавление расходов
     UPDATE
     DELETE
