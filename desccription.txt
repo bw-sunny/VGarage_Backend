@@ -9,8 +9,11 @@ v0.1 - Инициализированы таблицы БД, настроен х
     POST /vgarage/create/car -- Добавление новой машины
     UPDATE
     DELETE vgarage/car/{car_id} -- Удаление машины. {car_id} - id машиниы для удаления
-    GET /vgarage/user/{user_id}/car -- получение списка машин у конкретного юзера
+    GET /vgarage/user/{user_id}/car -- получение списка машин у конкретного юзера. {user_id} - конкретный id
 
     POST /vgarage/create/expense --  Добавление расходов
     UPDATE
     DELETE
+
+
+YANDEX API KEY: "4e6048c9-746f-4950-92d4-5050d17b425c"

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JS API v3.0 — Поиск</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <style>
+        html, body, #map {
+            width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
+        }
+        .search-panel {
+            position: absolute; top: 15px; left: 15px; right: 15px; z-index: 1000;
+            background: white; padding: 8px; border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; gap: 8px;
+        }
+        .search-panel input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; }
+        .search-panel button { padding: 10px 20px; background: #fbc02d; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="search-panel">
+        <input type="text" id="search-input" value="Москва, автосервис">
+        <button onclick="runSearch()">Найти</button>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://api-maps.yandex.ru/v3/?apikey=4e6048c9-746f-4950-92d4-5050d17b425c&lang=ru_RU"></script>
+
+    <script>
+        let map;
+        let searchModule;
+        let markerModule;
+        let activeMarkers = [];
+
+        async function initMap() {
+            // Wait for core API to be ready
+            await ymaps3.ready;
+
+            const { YMap, YMapDefaultSchemeLayer, YMapDefaultFeaturesLayer } = ymaps3;
+
+            // Инициализируем карту
+            map = new YMap(document.getElementById('map'), {
+                location: { center: [37.588144, 55.733842], zoom: 11 }
+            });
+
+            // Добавляем слои (Features-слой ОБЯЗАТЕЛЕН для стандартных маркеров Яндекса)
+            map.addChild(new YMapDefaultSchemeLayer());
+            map.addChild(new YMapDefaultFeaturesLayer());
+
+            try {
+                // Пробуем импортировать официальные модули поиска и маркеров
+                searchModule = await ymaps3.import('@yandex/ymaps3-search@0.0.1');
+                markerModule = await ymaps3.import('@yandex/ymaps3-markers@0.0.1');
+                console.log("Модули поиска и маркеров успешно загружены!");
+            } catch (err) {
+                console.error("Ошибка при импорте модулей:", err);
+                alert("Не удалось загрузить модуль поиска: " + err.message);
+            }
+        }
+
+        async function runSearch() {
+            const query = document.getElementById('search-input').value;
+            if (!query || !searchModule) return;
+
+            // Удаляем старые маркеры
+            activeMarkers.forEach(m => map.removeChild(m));
+            activeMarkers = [];
+
+            try {
+                // Вызываем встроенную функцию поиска Яндекса
+                const response = await searchModule.search({
+                    text: query,
+                    bounds: map.bounds // ищем в видимой области карты
+                });
+
+                if (!response || response.length === 0) {
+                    alert("Ничего не найдено");
+                    return;
+                }
+
+                const { YMapDefaultMarker } = markerModule;
+
+                // Перебираем результаты и ставим маркеры
+                response.forEach(point => {
+                    const marker = new YMapDefaultMarker({
+                        coordinates: point.geometry.coordinates,
+                        title: point.properties.name,
+                        subtitle: point.properties.description,
+                        color: '#ef5350'
+                    });
+
+                    map.addChild(marker);
+                    activeMarkers.push(marker);
+                });
+
+                // Летим к первому результату
+                map.setLocation({
+                    center: response[0].geometry.coordinates,
+                    zoom: 14,
+                    duration: 400
+                });
+
+            } catch (err) {
+                console.error("Ошибка поиска:", err);
+                alert("Ошибка выполнения поиска: " + err.message);
+            }
+        }
+
+        initMap();
+    </script>
+</body>
+</html>
