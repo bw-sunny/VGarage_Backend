@@ -253,42 +253,61 @@ func AIAssistantHandler(c *gin.Context) {
 		return
 	}
 
-	// 1. Имитируем быстрый SQL-запрос к таблице `cars`
-	car := CarSpec{
-		Brand: "Toyota",
-		Model: "Camry",
-		Year:  2018,
+	// 1. Достаем РЕАЛЬНЫЕ данные автомобиля из базы данных
+	var car models.Car
+	carQuery := `SELECT brand, model, year, mileage FROM cars WHERE id = $1`
+	err := database.DB.Get(&car, carQuery, req.CarID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Автомобиль не найден в базе данных"})
+		return
 	}
 
-	// 2. Имитируем SQL-запрос к `maintenance_logs`
-	logs := []MaintenanceLog{
-		{Date: "2026-01-15", Description: "Замена моторного масла и фильтров"},
-		{Date: "2025-10-10", Description: "Диагностика подвески, замена передних сайлентблоков"},
+	// 2. Достаем РЕАЛЬНУЮ историю обслуживания (последние 5 записей, чтобы не раздувать промпт)
+	var logs []models.MaintenanceLog
+	logsQuery := `SELECT work_date, description, mileage FROM maintenance_logs WHERE car_id = $1 ORDER BY work_date DESC LIMIT 5`
+	err = database.DB.Select(&logs, logsQuery, req.CarID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при получении истории ТО: " + err.Error()})
+		return
 	}
 
-	// 3. Контекст-буфер (Augmentation)
-	contextBuffer := fmt.Sprintf("КОНТЕКСТ АВТОМОБИЛЯ:\nМарка/Модель: %s %s (%d г.в.)\n", car.Brand, car.Model, car.Year)
-	contextBuffer += "ИСТОРИЯ ОБСЛУЖИВАНИЯ:\n"
-	for _, log := range logs {
-		contextBuffer += fmt.Sprintf("- [%s] %s\n", log.Date, log.Description)
+	fmt.Println(logs)
+
+	// 3. Контекст-буфер (Augmentation) — собираем реальные данные для ИИ
+	contextBuffer := fmt.Sprintf("КОНТЕКСТ АВТОМОБИЛЯ:\nМарка/Модель: %s %s (%d г.в.)\nТекущий пробег: %d км\n\n", car.Brand, car.Model, car.Year, car.Mileage)
+	contextBuffer += "ИСТОРИЯ ОБСЛУЖИВАНИЯ (Последние записи):\n"
+
+	if len(logs) == 0 {
+		contextBuffer += "- Записи об обслуживании отсутствуют.\n"
+	} else {
+		for _, log := range logs {
+			// Красиво форматируем дату без лишнего времени
+			formattedDate := log.WorkDate.Format("2006-01-02")
+			contextBuffer += fmt.Sprintf("- [%s] %s\n", formattedDate, log.Description)
+		}
 	}
-	contextBuffer += fmt.Sprintf("\nЗАПРОС ПОЛЬЗОВАТЕЛЯ:\n%s", req.Message)
+	contextBuffer += fmt.Sprintf("\nЗАПРОС ПОЛЬЗОВАТЕЛЯ И СИМПТОМЫ:\n%s", req.Message)
 
 	// Печатаем собранный промпт в консоль для отладки
-	fmt.Println("================ [ПОДГОТОВЛЕННЫЙ ПРОМПТ ДЛЯ ИИ] ================")
+	fmt.Println("================ [ПОДГОТОВЛЕННЫЙ ПРОМПТ ИЗ РЕАЛЬНОЙ БД] ================")
 	fmt.Println(contextBuffer)
-	fmt.Println("================================================================")
+	fmt.Println("========================================================================")
 
-	// 4. Заглушка ответа
+	// 4. Заглушка ответа (берет данные из настоящей БД)
+	lastServiceInfo := "Записей нет"
+	if len(logs) > 0 {
+		lastServiceInfo = fmt.Sprintf("%s (%s)", logs[0].Description, logs[0].WorkDate.Format("2006-01-02"))
+	}
+
 	mockAIResponse := gin.H{
 		"status":  "success",
 		"is_mock": true,
 		"message": fmt.Sprintf(
-			"Привет! Я твой ИИ-ассистент vGarage. Вижу, что ты владеешь %s %s %d года. "+
-				"Последний раз ты менял масло %s. На основе твоего запроса («%s»), я пока "+
-				"имитирую анализ. Как только мой создатель подключит API DeepSeek, здесь появится "+
-				"реальный диагноз поломки!",
-			car.Brand, car.Model, car.Year, logs[0].Date, req.Message,
+			"Привет! Я ИИ-ассистент vGarage. Я изучил параметры твоего %s %s (%d г.). "+
+				"Последнее зафиксированное действие в сервисной книжке: %s. "+
+				"По твоему запросу («%s») я подготавливаю анализ. База полностью настроена, "+
+				"промпт сформирован на реальных данных и готов к отправке в DeepSeek!",
+			car.Brand, car.Model, car.Year, lastServiceInfo, req.Message,
 		),
 		"timestamp": time.Now().Format(time.RFC3339),
 	}

@@ -65,3 +65,13 @@ type AIHistory struct {
 	CreatedAt          time.Time       `db:"created_at" json:"created_at"`
 	UpdatedAt          time.Time       `db:"updated_at" json:"updated_at"`
 }
+
+type MaintenanceLog struct {
+	ID          int       `db:"id" json:"id"`
+	CarID       int       `db:"car_id" json:"car_id"`
+	WorkDate    time.Time `db:"work_date" json:"work_date"`
+	Description string    `db:"description" json:"description"`
+	Mileage     *int      `db:"mileage" json:"mileage"` // Используем указатель, чтобы поле могло быть null в БД
+	Cost        float64   `db:"cost" json:"cost"`
+	CreatedAt   time.Time `db:"created_at" json:"created_at"`
+}

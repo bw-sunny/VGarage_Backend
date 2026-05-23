@@ -21,6 +21,7 @@ func main() {
 	{
 		api.POST("/ai-assistant", handlers.AIAssistantHandler)
 	}
+
 	v1 := r.Group("/vgarage")
 	{
 		v1.POST("/create/user", handlers.CreateUserHandler)
